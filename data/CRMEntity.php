@@ -384,6 +384,17 @@ class CRMEntity {
 					$sql3 = 'insert into vtiger_seattachmentsrel values(?,?)';
 					$adb->pquery($sql3, array($id, $current_id));
 				}
+			} elseif ($module == 'Users') {
+				if ($id != '') {
+					$delquery = 'delete from vtiger_salesmanattachmentsrel where smid = ?';
+					$this->db->pquery($delquery, array($id));
+				}
+
+				$sql3 = 'insert into vtiger_salesmanattachmentsrel values(?,?)';
+				$this->db->pquery($sql3, array($id, $current_id));
+
+				//we should update the imagename in the users table
+				$this->db->pquery("update vtiger_users set imagename=? where id=?", array($filename, $id));
 			} else {
 				$sql3 = 'insert into vtiger_seattachmentsrel values(?,?)';
 				$adb->pquery($sql3, array($id, $current_id));

@@ -1006,67 +1006,6 @@ class Users extends CRMEntity {
 		return $this;
 	}
 
-	/** Function to upload the file to the server and add the file details in the attachments table
-	 * @param $id -- user id:: Type varchar
-	 * @param $module -- module name:: Type varchar
-	 * @param $file_details -- file details array:: Type array
-	 */
-	public function uploadAndSaveFile($id, $module, $file_details, $attachmentname = '', $direct_import = false, $forfield = '') {
-		global $log, $current_user, $upload_badext;
-
-		$date_var = date('Y-m-d H:i:s');
-
-		//to get the owner id
-		$ownerid = (isset($this->column_fields['assigned_user_id']) ? $this->column_fields['assigned_user_id'] : $current_user->id);
-		if (!isset($ownerid) || $ownerid == '') {
-			$ownerid = $current_user->id;
-		}
-
-		$file = $file_details['name'];
-		$binFile = sanitizeUploadFileName($file, $upload_badext);
-
-		$filename = ltrim(basename(" " . $binFile));
-		//allowed filename like UTF-8 characters
-		$filetype = $file_details['type'];
-		$filesize = $file_details['size'];
-		$filetmp_name = $file_details['tmp_name'];
-
-		if (validateImageFile($file_details) == true && validateImageContents($filetmp_name) == false) {
-			$log->debug("Skip the save attachment process.");
-			return;
-		}
-
-		$current_id = $this->db->getUniqueID("vtiger_crmentity");
-
-		//get the file path inwhich folder we want to upload the file
-		$upload_file_path = decideFilePath();
-		//upload the file in server
-		$upload_status = move_uploaded_file($filetmp_name, $upload_file_path . $current_id . "_" . $binFile);
-
-		if ($upload_status) {
-			$sql1 = 'insert into vtiger_crmentity (crmid,smcreatorid,smownerid,setype,description,createdtime,modifiedtime) values(?,?,?,?,?,?,?)';
-			$params1 = array($current_id, $current_user->id, $ownerid, $module . ' Attachment', $this->column_fields['description'],
-				$this->db->formatString('vtiger_crmentity', 'createdtime', $date_var), $this->db->formatDate($date_var, true));
-			$this->db->pquery($sql1, $params1);
-
-			$sql2 = 'insert into vtiger_attachments(attachmentsid, name, description, type, path) values(?,?,?,?,?)';
-			$params2 = array($current_id, $filename, $this->column_fields['description'], $filetype, $upload_file_path);
-			$result = $this->db->pquery($sql2, $params2);
-
-			if ($id != '') {
-				$delquery = 'delete from vtiger_salesmanattachmentsrel where smid = ?';
-				$this->db->pquery($delquery, array($id));
-			}
-
-			$sql3 = 'insert into vtiger_salesmanattachmentsrel values(?,?)';
-			$this->db->pquery($sql3, array($id, $current_id));
-
-			//we should update the imagename in the users table
-			$this->db->pquery("update vtiger_users set imagename=? where id=?", array($filename, $id));
-		}
-		return;
-	}
-
 	/** Function to save the user information into the database
 	 * @param $module -- module name:: Type varchar
 	 */
